@@ -170,7 +170,7 @@ struct TrackerView: View {
                                 HStack {
                                     Text(moodEmoji(for: currentMood))
                                         .font(.system(size: 40))
-                                    Text("Track your mood")
+                                    Text("Your mood")
                                         .foregroundColor(.primary)
                                     Spacer()
                                     Image(systemName: "chevron.right")
@@ -422,6 +422,8 @@ struct RelaxationView: View {
     @State private var autoStartCountdown = 3
     @State private var autoStartTimer: Timer?
     @State private var shouldAutoStart: Bool
+    @State private var isBreathing = false
+    @State private var breathingCycle = 0
     
     var showBackButton: Bool
     @Environment(\.presentationMode) var presentationMode
@@ -591,7 +593,18 @@ struct RelaxationView: View {
             
             Spacer()
             
-            Button(action: startBreathing) {
+            Button(action: {
+                // Stop any existing timer
+                timer?.invalidate()
+                timer = nil
+                
+                // Reset states
+                isBreathing = false
+                breathingCycle = 0
+                
+                // Start new breathing session
+                startBreathing()
+            }) {
                 Text(isRunning ? "Reset" : "Start Breathing")
                     .font(.headline)
                     .foregroundColor(.white)
@@ -622,6 +635,7 @@ struct RelaxationView: View {
         isCompleted = false
         breatheIn = false  // Start contracted
         breathMessage = "Get ready..."
+        counter = 0
         
         // Cancel any existing timer
         timer?.invalidate()
@@ -657,6 +671,9 @@ struct RelaxationView: View {
                 }
             }
         }
+        
+        // Start the timer immediately
+        timer?.fire()
     }
     
     private func completeExercise() {
@@ -667,12 +684,21 @@ struct RelaxationView: View {
         breathMessage = "Exercise Complete"
         triggerHapticFeedback()
     }
-
-    // Haptic Feedback when Breathing Timer ends
+    
     private func triggerHapticFeedback() {
-        let feedbackGenerator = UINotificationFeedbackGenerator()
-        feedbackGenerator.prepare()
-        feedbackGenerator.notificationOccurred(.success) // Trigger success haptic feedback
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.success)
+    }
+    
+    private func cleanup() {
+        timer?.invalidate()
+        timer = nil
+        isRunning = false
+        isCompleted = false
+        breatheIn = false
+        breathMessage = "Get ready..."
+        timeRemaining = 5
+        counter = 0
     }
     
     // MARK: - Body Scan Relaxation
@@ -1138,6 +1164,9 @@ struct ERPView: View {
                 }
             }
         }
+        
+        // Start the timer immediately
+        timer?.fire()
     }
 
     private func completeExercise() {
